@@ -9,7 +9,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { getRecord, saveRecord, todayISO } from "@/lib/storage";
+import {
+  createRecordStore,
+  TRACKER_STORAGE_KEY,
+  todayISO,
+} from "@/lib/storage";
+
+const store = createRecordStore(TRACKER_STORAGE_KEY);
 
 export default function TrackerPage() {
   const [user, setUser] = useState("");
@@ -22,7 +28,7 @@ export default function TrackerPage() {
 
   // 選択中の日付の保存済み記録を読み込んでフォームに反映する
   useEffect(() => {
-    const rec = getRecord(date);
+    const rec = store.getRecord(date);
     setSaved(rec);
     if (rec) {
       setUser((prev) => prev || rec.user || "");
@@ -58,7 +64,7 @@ export default function TrackerPage() {
       meals: [],
       training: [],
     };
-    saveRecord(record);
+    store.saveRecord(record);
     setSaved(record);
     setToast("保存しました");
   }
