@@ -1,35 +1,40 @@
-// v2 の体重記録を localStorage に保存する最小実装。
-// データは日付をキーにしたマップ { "YYYY-MM-DD": record } として保持する。
-// tracker / solo で localStorage キーを分けるため、ストアをキー指定で生成する。
+// v2 の体重記録を localStorage に保存する。
+// 記録は record の配列として保持する（date でユニーク）。
+// tracker / solo でキーを分ける。
 
 export const TRACKER_STORAGE_KEY = "weight-log-v2-tracker-records";
 export const SOLO_STORAGE_KEY = "weight-log-v2-solo-records";
 
-export function todayISO() {
-  const now = new Date();
-  const offset = now.getTimezoneOffset() * 60000;
-  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
+export function loadRecords(key) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(key) || "[]");
+    if (Array.isArray(raw)) return raw;
+    // 旧マップ形式 { "YYYY-MM-DD": record } との互換
+    if (raw && typeof raw === "object") return Object.values(raw);
+    return [];
+  } catch {
+    return [];
+  }
 }
 
-export function createRecordStore(storageKey) {
-  function loadAll() {
-    try {
-      return JSON.parse(localStorage.getItem(storageKey) || "{}");
-    } catch {
-      return {};
-    }
-  }
+export function saveRecords(key, records) {
+  localStorage.setItem(key, JSON.stringify(records));
+  return records;
+}
 
-  return {
-    loadAll,
-    getRecord(date) {
-      return loadAll()[date] || null;
-    },
-    saveRecord(record) {
-      const all = loadAll();
-      all[record.date] = record;
-      localStorage.setItem(storageKey, JSON.stringify(all));
-      return all;
-    },
-  };
+export function getRecordByDate(key, date) {
+  return loadRecords(key).find((r) => r.date === date) || null;
+}
+
+export function upsertRecord(key, record) {
+  const records = loadRecords(key).filter((r) => r.date !== record.date);
+  records.push(record);
+  records.sort((a, b) => a.date.localeCompare(b.date));
+  saveRecords(key, records);
+  return records;
+}
+
+export function deleteAllRecords(key) {
+  localStorage.removeItem(key);
+  return [];
 }
