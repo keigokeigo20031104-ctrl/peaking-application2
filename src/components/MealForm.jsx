@@ -20,8 +20,19 @@ export default function MealForm({ meals = [], onChange }) {
     setText("");
   }
 
+  function updateMeal(index, field, value) {
+    onChange(meals.map((m, i) => (i === index ? { ...m, [field]: value } : m)));
+  }
+
   function deleteMeal(index) {
     onChange(meals.filter((_, i) => i !== index));
+  }
+
+  function sortByTime() {
+    const sorted = [...meals].sort((a, b) =>
+      (a.time || "99:99").localeCompare(b.time || "99:99")
+    );
+    onChange(sorted);
   }
 
   return (
@@ -57,25 +68,50 @@ export default function MealForm({ meals = [], onChange }) {
       <Card>
         <CardHeader>
           <CardTitle>今日の食事</CardTitle>
+          <CardDescription>
+            {meals.length
+              ? `${meals.length} 件 ・ 各項目はその場で編集できます。`
+              : "追加した食事がここに表示されます。"}
+          </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-3">
+          {meals.length >= 2 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="self-start"
+              onClick={sortByTime}
+            >
+              時刻順に並べ替え
+            </Button>
+          )}
           {meals.length ? (
             <ul className="flex flex-col gap-2">
               {meals.map((m, i) => (
                 <li
                   key={i}
-                  className="flex items-center gap-3 rounded-md border bg-secondary/30 p-3"
+                  className="flex items-center gap-2 rounded-md border bg-secondary/30 p-2"
                 >
-                  <span className="text-sm font-semibold tabular-nums text-muted-foreground">
-                    {m.time || "--:--"}
-                  </span>
-                  <span className="flex-1 break-words text-sm">{m.text}</span>
+                  <Input
+                    type="time"
+                    value={m.time || ""}
+                    onChange={(e) => updateMeal(i, "time", e.target.value)}
+                    className="w-28 shrink-0"
+                    aria-label="食事の時刻"
+                  />
+                  <Input
+                    value={m.text}
+                    onChange={(e) => updateMeal(i, "text", e.target.value)}
+                    className="flex-1"
+                    aria-label="食事内容"
+                  />
                   <Button
-                    variant="destructive"
+                    variant="ghost"
                     size="sm"
                     onClick={() => deleteMeal(i)}
+                    aria-label="食事削除"
                   >
-                    削除
+                    ×
                   </Button>
                 </li>
               ))}

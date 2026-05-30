@@ -11,6 +11,18 @@ export function estimateOneRepMax(weight, reps) {
   return w * (1 + r / 30);
 }
 
+// Brzycki式 推定1RM = 重量 × 36 / (37 - 回数)
+// 回数が 37 以上だと式が破綻するため null を返す。
+export function estimateOneRepMaxBrzycki(weight, reps) {
+  const w = Number(weight);
+  const r = Number(reps);
+  if (!Number.isFinite(w) || !Number.isFinite(r) || w <= 0 || r <= 0) {
+    return null;
+  }
+  if (r >= 37) return null;
+  return (w * 36) / (37 - r);
+}
+
 // 総負荷量 kg × rep
 export function calcTrainingVolume(training = []) {
   return training.reduce(
@@ -46,4 +58,13 @@ export function calcBestOneRepMax(training = []) {
     })
   );
   return best > 0 ? best : null;
+}
+
+// 記録配列から日別の最高推定1RM系列を作る（グラフ用）。
+// [{ date, value }] を date 昇順で返す。1RM が出せない日は除外する。
+export function dailyBestOneRepMax(records = []) {
+  return records
+    .map((r) => ({ date: r.date, value: calcBestOneRepMax(r.training || []) }))
+    .filter((d) => d.value != null)
+    .sort((a, b) => a.date.localeCompare(b.date));
 }

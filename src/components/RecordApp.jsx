@@ -9,6 +9,7 @@ import {
   loadRecords,
   getRecordByDate,
   upsertRecord,
+  deleteRecord,
   deleteAllRecords,
 } from "@/lib/storage";
 import { todayString } from "@/lib/date";
@@ -121,6 +122,46 @@ export default function RecordApp({ storageKey, title, subtitle }) {
     URL.revokeObjectURL(a.href);
   }
 
+  function handleExportCsv() {
+    const header = ["date", "user", "weight", "calories", "meals", "training", "note"];
+    const escape = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const rows = [...records]
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((r) =>
+        [
+          r.date,
+          r.user,
+          r.weight ?? "",
+          r.calories ?? "",
+          (r.meals || []).length,
+          (r.training || []).length,
+          r.note,
+        ]
+          .map(escape)
+          .join(",")
+      );
+    const csv = [header.join(","), ...rows].join("\r\n");
+    // Excel で文字化けしないよう BOM を付与する。
+    const blob = new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${storageKey}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function handleDeleteOne(targetDate) {
+    if (!window.confirm(`${targetDate} の記録を削除しますか？`)) {
+      return;
+    }
+    const next = deleteRecord(storageKey, targetDate);
+    setRecords(next);
+    if (targetDate === date) {
+      setDraft(emptyDraft(date, draft.user));
+    }
+    setToast("削除しました");
+  }
+
   function handleDeleteAll() {
     if (!window.confirm("すべての記録を削除しますか？この操作は元に戻せません。")) {
       return;
@@ -180,6 +221,8 @@ export default function RecordApp({ storageKey, title, subtitle }) {
           <DataList
             records={records}
             onExport={handleExport}
+            onExportCsv={handleExportCsv}
+            onDeleteOne={handleDeleteOne}
             onDeleteAll={handleDeleteAll}
           />
         </TabsContent>

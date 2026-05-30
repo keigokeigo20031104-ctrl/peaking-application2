@@ -34,6 +34,12 @@ export function upsertRecord(key, record) {
   return records;
 }
 
+export function deleteRecord(key, date) {
+  const records = loadRecords(key).filter((r) => r.date !== date);
+  saveRecords(key, records);
+  return records;
+}
+
 export function deleteAllRecords(key) {
   localStorage.removeItem(key);
   return [];

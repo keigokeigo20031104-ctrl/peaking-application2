@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   estimateOneRepMax,
+  estimateOneRepMaxBrzycki,
   calcTrainingVolume,
   calcSetCount,
   calcRepCount,
@@ -56,6 +57,15 @@ export default function TrainingForm({ training = [], onChange }) {
   function addSet(i) {
     updateExercise(i, {
       sets: [...(training[i].sets || []), { weight: null, reps: null, note: "" }],
+    });
+  }
+
+  // 直前のセットの重量・回数を引き継いで新しいセットを追加する。
+  function duplicateLastSet(i) {
+    const sets = training[i].sets || [];
+    const last = sets[sets.length - 1] || { weight: null, reps: null };
+    updateExercise(i, {
+      sets: [...sets, { weight: last.weight, reps: last.reps, note: "" }],
     });
   }
 
@@ -173,6 +183,7 @@ export default function TrainingForm({ training = [], onChange }) {
                     <div className="flex flex-col gap-3">
                       {(t.sets || []).map((s, j) => {
                         const rm = estimateOneRepMax(s.weight, s.reps);
+                        const rmB = estimateOneRepMaxBrzycki(s.weight, s.reps);
                         return (
                           <div key={j} className="flex flex-col gap-1.5">
                             <div className="flex items-center gap-2">
@@ -218,6 +229,12 @@ export default function TrainingForm({ training = [], onChange }) {
                             {rm != null && (
                               <p className="ml-12 text-xs font-semibold text-primary">
                                 {s.weight}kg × {s.reps}回 ・ 推定1RM: {rm.toFixed(1)}kg
+                                {rmB != null && (
+                                  <span className="font-normal text-muted-foreground">
+                                    {" "}
+                                    (Brzycki {rmB.toFixed(1)}kg)
+                                  </span>
+                                )}
                               </p>
                             )}
                           </div>
@@ -225,14 +242,23 @@ export default function TrainingForm({ training = [], onChange }) {
                       })}
                     </div>
 
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="self-start"
-                      onClick={() => addSet(i)}
-                    >
-                      ＋ セット追加
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => addSet(i)}
+                      >
+                        ＋ セット追加
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => duplicateLastSet(i)}
+                        disabled={!(t.sets || []).length}
+                      >
+                        前セットを複製
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
