@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 80 14% 96%;
+    --foreground: 168 18% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 168 18% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 168 18% 11%;
+    --primary: 168 65% 25%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 150 20% 94%;
+    --secondary-foreground: 168 18% 11%;
+    --muted: 150 12% 93%;
+    --muted-foreground: 168 8% 42%;
+    --accent: 158 38% 92%;
+    --accent-foreground: 168 65% 20%;
+    --destructive: 4 76% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 156 12% 86%;
+    --input: 156 12% 86%;
+    --ring: 168 65% 25%;
+    --radius: 0.9rem;
+  }
+
+  .dark {
+    --background: 168 18% 8%;
+    --foreground: 0 0% 98%;
+    --card: 168 16% 12%;
+    --card-foreground: 0 0% 98%;
+    --popover: 168 16% 12%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 168 55% 45%;
+    --primary-foreground: 168 18% 8%;
+    --secondary: 168 12% 18%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 168 12% 18%;
+    --muted-foreground: 156 10% 64%;
+    --accent: 168 16% 20%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 4 70% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 168 12% 22%;
+    --input: 168 12% 22%;
+    --ring: 168 55% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif;
+  }
+}
