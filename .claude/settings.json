@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command' | grep -E '^git (commit|push)' > /dev/null && npm run check > /dev/null 2>&1 && echo '{\"continue\": true}' || echo '{\"continue\": false, \"stopReason\": \"Safety check failed: npm run build or npm run test:e2e failed. Fix errors before committing.\"}' || true",
+            "if": "Bash(git commit *)"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command' | grep -E '^git push' > /dev/null && npm run check > /dev/null 2>&1 && echo '{\"continue\": true}' || echo '{\"continue\": false, \"stopReason\": \"Safety check failed: npm run build or npm run test:e2e failed. Fix errors before pushing.\"}' || true",
+            "if": "Bash(git push *)"
+          }
+        ]
+      }
+    ]
+  }
+}

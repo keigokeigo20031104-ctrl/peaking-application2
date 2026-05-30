@@ -1,28 +1,78 @@
-# 半自動開発フロー
+# 完全自動開発フロー
 
-1. developer が実装
-2. reviewer が `npm run build` と `npm run test:e2e` を実行
-3. 不具合があれば developer に戻す
-4. 問題がなければ release-manager が commit & push
-5. push 後に Cloudflare デプロイを確認
+## 全体フロー
 
-## ターミナル構成
+```
+developer (実装)
+  ↓
+  git add & git commit
+    ↓ (ローカル hooks で自動check)
+  ✓ npm run check 成功
+    ↓
+  release-manager (自動実行)
+    ↓
+    git push
+      ↓ (GitHub Actions で再検証)
+      ✓ build & e2e OK
+        ↓
+        Cloudflare デプロイ
+```
 
-- 左: developer
-- 右: reviewer
-- 必要時: release-manager
+## 各ロール詳細
 
-## コマンド早見表
+### 1. Developer
+- 実装・修正を完了
+- `git add <files>`
+- `git commit -m "type: description"`
 
-| 役割 | 主なコマンド |
-|---|---|
-| developer | `npm run build` |
-| reviewer | `npm run build` / `npm run test:e2e`（= `npm run check`） |
-| release-manager | `npm run check` → `git add` / `commit` / `push` |
+**ローカル hooks が自動実行：**
+- commit 前に `npm run check` (build + e2e test)
+- 失敗したら commit が止まる → fix → 再度 commit
 
-## 禁止事項
+### 2. Reviewer
+- **ほぼ不要** → hooks と CI が自動検証
+- 必要に応じて code review（PR コメント）
 
-- reviewer は原則ファイル編集しない
-- build 失敗中に commit しない
-- test:e2e 失敗中に push しない
-- 旧リポジトリ peaking-application を触らない
+### 3. Release-Manager
+- `npm run check` 成功を確認
+- `git push` を実行
+
+**ローカル hooks が自動実行：**
+- push 前に再度 `npm run check`
+- 失敗したら push が止まる
+
+### 4. GitHub Actions CI
+- main push & PR 時に実行
+- `npm ci` → `npm run build` → `npm run test:e2e`
+- 失敗したら赤バッジ
+
+### 5. Cloudflare Deployment
+- main への push 後に自動デプロイ
+- `.github/workflows/ci.yml` 完了後
+
+## ローカル安全装置
+
+**`.claude/settings.json`:**
+- PreToolUse hooks で `git commit` & `git push` 前に `npm run check` を実行
+- 失敗したら command が stop
+
+## CI 安全装置
+
+**`.github/workflows/ci.yml`:**
+- Node.js 18 で実行
+- `npm ci` (clean install)
+- `npm run build`
+- `npm run test:e2e`
+- 失敗したら赤になる
+
+## 注意事項
+
+- 旧リポジトリ `peaking-application` は絶対に触らない
+- API/KV 連携はまだ実装しない
+- 既存の v2 最小機能を壊さない
+
+## ターミナル構成（参考）
+
+- 左: developer（実装）
+- 右: reviewer（監視 - 自動化で不要になることも）
+- CI/CD: GitHub Actions（自動）
