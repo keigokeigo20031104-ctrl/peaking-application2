@@ -39,12 +39,13 @@ function toDraft(rec) {
 }
 
 function toRecord(d) {
-  const w = Number(d.weight);
+  const weightStr = (d.weight || "").trim();
+  const w = Number(weightStr);
   const c = Number(d.calories);
   return {
     user: (d.user || "").trim() || "unknown",
     date: d.date,
-    weight: d.weight !== "" && Number.isFinite(w) ? Math.round(w * 10) / 10 : null,
+    weight: weightStr !== "" && Number.isFinite(w) ? Math.round(w * 10) / 10 : null,
     calories: d.calories !== "" && Number.isFinite(c) ? Math.round(c) : null,
     note: (d.note || "").trim(),
     meals: d.meals || [],
@@ -90,10 +91,13 @@ export default function RecordApp({ storageKey, title, subtitle }) {
       setToast("日付を入力してください");
       return;
     }
-    const w = Number(draft.weight);
-    if (!Number.isFinite(w) || w <= 0) {
-      setToast("体重を入力してください");
-      return;
+    const weightStr = (draft.weight || "").trim();
+    if (weightStr !== "") {
+      const w = Number(weightStr);
+      if (!Number.isFinite(w) || w <= 0) {
+        setToast("体重は正の数値を入力してください");
+        return;
+      }
     }
     persist(draft);
     setToast("保存しました");
@@ -119,7 +123,7 @@ export default function RecordApp({ storageKey, title, subtitle }) {
     a.href = URL.createObjectURL(blob);
     a.download = `${storageKey}.json`;
     a.click();
-    URL.revokeObjectURL(a.href);
+    setTimeout(() => URL.revokeObjectURL(a.href), 100);
   }
 
   function handleExportCsv() {
@@ -147,12 +151,12 @@ export default function RecordApp({ storageKey, title, subtitle }) {
     a.href = URL.createObjectURL(blob);
     a.download = `${storageKey}.csv`;
     a.click();
-    URL.revokeObjectURL(a.href);
+    setTimeout(() => URL.revokeObjectURL(a.href), 100);
   }
 
   function handleDeleteOne(targetDate) {
     if (!window.confirm(`${targetDate} の記録を削除しますか？`)) {
-      return;
+      return false;
     }
     const next = deleteRecord(storageKey, targetDate);
     setRecords(next);
@@ -160,6 +164,7 @@ export default function RecordApp({ storageKey, title, subtitle }) {
       setDraft(emptyDraft(date, draft.user));
     }
     setToast("削除しました");
+    return true;
   }
 
   function handleDeleteAll() {
@@ -172,15 +177,56 @@ export default function RecordApp({ storageKey, title, subtitle }) {
     setToast("すべて削除しました");
   }
 
+  // クイック統計（記録が2件以上あるときだけ前日比を出す）
+  const sortedRecords = [...records].sort((a, b) => b.date.localeCompare(a.date));
+  const latestRec = sortedRecords[0] ?? null;
+  const prevRec = sortedRecords[1] ?? null;
+  const weightChange =
+    latestRec?.weight != null && prevRec?.weight != null
+      ? latestRec.weight - prevRec.weight
+      : null;
+
   return (
     <main className="container max-w-xl py-8">
-      <header className="mb-6">
+      <header className="mb-4">
         <a href="/" className="text-sm text-muted-foreground hover:underline">
           ← ホーム
         </a>
         <h1 className="mt-2 text-2xl font-black tracking-tight">{title}</h1>
         <p className="text-muted-foreground">{subtitle}</p>
       </header>
+
+      {/* クイック統計ストリップ */}
+      <div className="mb-5 grid grid-cols-3 gap-2 rounded-xl border bg-card p-3 shadow-sm">
+        <div className="flex flex-col items-center">
+          <span className="text-[10px] font-semibold text-muted-foreground">最新体重</span>
+          <span className="text-base font-black tabular-nums">
+            {latestRec?.weight != null ? `${latestRec.weight} kg` : "--"}
+          </span>
+        </div>
+        <div className="flex flex-col items-center border-x">
+          <span className="text-[10px] font-semibold text-muted-foreground">前日比</span>
+          <span
+            className={`text-base font-black tabular-nums ${
+              weightChange == null
+                ? ""
+                : weightChange > 0.05
+                ? "text-red-500"
+                : weightChange < -0.05
+                ? "text-blue-500"
+                : ""
+            }`}
+          >
+            {weightChange == null
+              ? "--"
+              : `${weightChange >= 0 ? "+" : ""}${weightChange.toFixed(1)} kg`}
+          </span>
+        </div>
+        <div className="flex flex-col items-center">
+          <span className="text-[10px] font-semibold text-muted-foreground">総記録</span>
+          <span className="text-base font-black tabular-nums">{records.length} 日</span>
+        </div>
+      </div>
 
       <Tabs defaultValue="record">
         <TabsList className="grid h-auto w-full grid-cols-5 gap-1">
@@ -206,11 +252,11 @@ export default function RecordApp({ storageKey, title, subtitle }) {
         </TabsContent>
 
         <TabsContent value="meals">
-          <MealForm meals={draft.meals} onChange={handleMealsChange} />
+          <MealForm key={draft.date} meals={draft.meals} onChange={handleMealsChange} />
         </TabsContent>
 
         <TabsContent value="training">
-          <TrainingForm training={draft.training} onChange={handleTrainingChange} />
+          <TrainingForm key={draft.date} training={draft.training} onChange={handleTrainingChange} />
         </TabsContent>
 
         <TabsContent value="chart">

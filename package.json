@@ -8,6 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "wrangler deploy",
+    "auto:dev": "powershell -ExecutionPolicy Bypass -File scripts/auto-dev-loop.ps1",
+    "auto:dev:sample": "powershell -ExecutionPolicy Bypass -File scripts/auto-dev-loop.ps1 -Task \"Adjust home page UI toward the reference site\" -MaxRounds 3",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "check": "npm run build && npm run test:e2e"

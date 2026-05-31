@@ -43,13 +43,22 @@ export default function WeightChart({ records = [] }) {
   let data = series;
   if (range !== "all") {
     const days = Number(range);
-    const now = new Date(todayString());
-    data = series.filter((r) => (now - new Date(r.date)) / 86400000 <= days);
+    const cutoff = new Date(todayString());
+    cutoff.setUTCDate(cutoff.getUTCDate() - days);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    data = series.filter((r) => r.date >= cutoffStr);
   }
 
+  // SVG レイアウト定数
   const W = 320;
-  const H = 160;
-  const P = 28;
+  const H = 180;
+  const ML = 44; // Y軸ラベル用の左マージン
+  const MR = 8;
+  const MT = 10;
+  const MB = 22; // X軸ラベル用の下マージン
+  const plotW = W - ML - MR;
+  const plotH = H - MT - MB;
+
   let body = null;
 
   if (data.length < 2) {
@@ -62,16 +71,38 @@ export default function WeightChart({ records = [] }) {
     const vals = data.map((r) => r.value);
     const min = Math.min(...vals);
     const max = Math.max(...vals);
+    const avg = vals.reduce((s, v) => s + v, 0) / vals.length;
     const span = max - min || 1;
-    const points = data.map((r, i) => {
-      const x = P + (W - 2 * P) * (i / (data.length - 1));
-      const y = H - P - (H - 2 * P) * ((r.value - min) / span);
-      return { x, y };
-    });
+    const change = data[data.length - 1].value - data[0].value;
+    const isCalories = metric === "calories";
+    const dp = isCalories ? 0 : 1;
+
+    const cx = (i) => ML + plotW * (i / (data.length - 1));
+    const cy = (v) => MT + plotH * (1 - (v - min) / span);
+
+    const points = data.map((r, i) => ({
+      x: cx(i),
+      y: cy(r.value),
+      value: r.value,
+      date: r.date,
+    }));
+
     const polyline = points.map((p) => `${p.x},${p.y}`).join(" ");
 
+    // エリア塗りつぶし用パス（折れ線の下に閉じる）
+    const areaPath = [
+      `M ${points[0].x},${MT + plotH}`,
+      ...points.map((p) => `L ${p.x},${p.y}`),
+      `L ${points[points.length - 1].x},${MT + plotH}`,
+      "Z",
+    ].join(" ");
+
+    const midVal = (min + max) / 2;
+    const midY = cy(midVal);
+    const gradId = `chart-area-${metric}`;
+
     body = (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <svg
           viewBox={`0 0 ${W} ${H}`}
           className="h-auto w-full"
@@ -79,32 +110,127 @@ export default function WeightChart({ records = [] }) {
           role="img"
           aria-label={`${meta.label}推移グラフ`}
         >
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.03" />
+            </linearGradient>
+          </defs>
+
+          {/* Y軸ラベル */}
+          <text
+            x={ML - 4}
+            y={MT + 4}
+            fontSize="9"
+            fill="hsl(var(--muted-foreground))"
+            textAnchor="end"
+          >
+            {max.toFixed(dp)}
+          </text>
+          <text
+            x={ML - 4}
+            y={midY + 4}
+            fontSize="9"
+            fill="hsl(var(--muted-foreground))"
+            textAnchor="end"
+          >
+            {midVal.toFixed(dp)}
+          </text>
+          <text
+            x={ML - 4}
+            y={MT + plotH + 1}
+            fontSize="9"
+            fill="hsl(var(--muted-foreground))"
+            textAnchor="end"
+          >
+            {min.toFixed(dp)}
+          </text>
+
+          {/* 中間グリッド線（破線） */}
           <line
-            x1={P}
-            y1={H - P}
-            x2={W - P}
-            y2={H - P}
+            x1={ML}
+            y1={midY}
+            x2={ML + plotW}
+            y2={midY}
+            stroke="hsl(var(--border))"
+            strokeWidth="1"
+            strokeDasharray="4 3"
+          />
+
+          {/* 下軸 */}
+          <line
+            x1={ML}
+            y1={MT + plotH}
+            x2={ML + plotW}
+            y2={MT + plotH}
             stroke="hsl(var(--border))"
             strokeWidth="1"
           />
+
+          {/* エリア塗り */}
+          <path d={areaPath} fill={`url(#${gradId})`} />
+
+          {/* 折れ線 */}
           <polyline
             fill="none"
             stroke="hsl(var(--primary))"
             strokeWidth="2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
             points={polyline}
           />
+
+          {/* データポイント（ホバー時にtitle表示） */}
           {points.map((p, i) => (
-            <circle key={i} cx={p.x} cy={p.y} r="2.5" fill="hsl(var(--primary))" />
+            <g key={i}>
+              <circle cx={p.x} cy={p.y} r="3" fill="hsl(var(--primary))" />
+              <title>
+                {p.date}: {p.value.toFixed(dp)}
+                {meta.unit}
+              </title>
+            </g>
           ))}
-          <text x="4" y={P} fontSize="10" fill="hsl(var(--muted-foreground))">
-            {max.toFixed(1)}
-            {meta.unit}
+
+          {/* X軸日付ラベル */}
+          <text
+            x={ML}
+            y={H - 4}
+            fontSize="9"
+            fill="hsl(var(--muted-foreground))"
+            textAnchor="start"
+          >
+            {data[0].date.slice(5)}
           </text>
-          <text x="4" y={H - P} fontSize="10" fill="hsl(var(--muted-foreground))">
-            {min.toFixed(1)}
-            {meta.unit}
+          <text
+            x={ML + plotW}
+            y={H - 4}
+            fontSize="9"
+            fill="hsl(var(--muted-foreground))"
+            textAnchor="end"
+          >
+            {data[data.length - 1].date.slice(5)}
           </text>
         </svg>
+
+        {/* 統計サマリー行 */}
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { label: "最小", value: min.toFixed(dp), cls: "" },
+            { label: "最大", value: max.toFixed(dp), cls: "" },
+            { label: "平均", value: avg.toFixed(dp), cls: "" },
+            {
+              label: "変化",
+              value: `${change >= 0 ? "+" : ""}${change.toFixed(dp)}`,
+              cls: change > 0.05 ? "text-red-500" : change < -0.05 ? "text-blue-500" : "",
+            },
+          ].map(({ label, value, cls }) => (
+            <div key={label} className="rounded-md bg-muted/50 p-2 text-center">
+              <p className="text-[10px] font-semibold text-muted-foreground">{label}</p>
+              <p className={`text-sm font-black tabular-nums ${cls}`}>{value}</p>
+            </div>
+          ))}
+        </div>
+
         <p className="text-xs text-muted-foreground">
           {data[0].date} 〜 {data[data.length - 1].date} ／ {data.length} 件
         </p>

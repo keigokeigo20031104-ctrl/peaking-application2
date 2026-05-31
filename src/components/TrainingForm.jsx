@@ -77,16 +77,19 @@ export default function TrainingForm({ training = [], onChange }) {
   }
 
   function deleteSet(i, j) {
-    updateExercise(i, {
-      sets: (training[i].sets || []).filter((_, idx) => idx !== j),
-    });
+    const newSets = (training[i].sets || []).filter((_, idx) => idx !== j);
+    if (newSets.length === 0) {
+      onChange(training.filter((_, idx) => idx !== i));
+    } else {
+      updateExercise(i, { sets: newSets });
+    }
   }
 
   const bestRM = calcBestOneRepMax(training);
   const stats = [
     ["セット数", calcSetCount(training)],
     ["合計レップ", calcRepCount(training)],
-    ["総負荷量", `${calcTrainingVolume(training).toFixed(1)}`],
+    ["総負荷量", `${calcTrainingVolume(training).toFixed(1)}kg`],
     ["最高1RM", bestRM != null ? `${bestRM.toFixed(1)}kg` : "--"],
   ];
 
@@ -150,7 +153,7 @@ export default function TrainingForm({ training = [], onChange }) {
               {training.map((t, i) => {
                 const exBest = calcBestOneRepMax([t]);
                 return (
-                  <div key={i} className="flex flex-col gap-3 rounded-lg border p-3">
+                  <div key={`${t.exercise}-${i}`} className="flex flex-col gap-3 rounded-lg border p-3">
                     <div className="flex items-center gap-2">
                       <Input
                         value={t.exercise}
@@ -185,7 +188,7 @@ export default function TrainingForm({ training = [], onChange }) {
                         const rm = estimateOneRepMax(s.weight, s.reps);
                         const rmB = estimateOneRepMaxBrzycki(s.weight, s.reps);
                         return (
-                          <div key={j} className="flex flex-col gap-1.5">
+                          <div key={`set-${i}-${j}`} className="flex flex-col gap-1.5">
                             <div className="flex items-center gap-2">
                               <span className="w-10 shrink-0 text-xs font-bold text-muted-foreground">
                                 {j + 1}set

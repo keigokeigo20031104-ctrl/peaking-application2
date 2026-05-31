@@ -4,12 +4,13 @@ test.describe("/ ホーム", () => {
   test("タイトルと各画面へのリンクが表示される", async ({ page }) => {
     await page.goto("/");
     await expect(
-      page.getByRole("heading", { name: "Peaking Application v2" })
+      page.getByRole("heading", { name: "Weight Apps" })
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: "入力者側へ" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "個人側へ" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "管理者画面へ" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "意見箱へ" })).toBeVisible();
+    await expect(page.getByText("体重ログと管理者画面")).toBeVisible();
+    await expect(page.getByRole("link", { name: /体重ログ（個人）/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /体重ログ（管理者送信）/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /管理者画面/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /意見箱/ })).toBeVisible();
   });
 });
 

@@ -6,6 +6,8 @@ dist
 .wrangler
 .env
 npm-debug.log*
+.auto-*.md
+.auto-build.log
 
 # Playwright
 /test-results

@@ -124,8 +124,8 @@ export default function DataList({
                           size="sm"
                           className="mt-3"
                           onClick={() => {
-                            onDeleteOne?.(r.date);
-                            setOpenDate(null);
+                            const deleted = onDeleteOne?.(r.date);
+                            if (deleted) setOpenDate(null);
                           }}
                         >
                           この日の記録を削除

@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const categories = ["バグ報告", "機能要望", "その他"];
@@ -57,8 +58,8 @@ export default function FeedbackPage() {
             <label className="text-sm font-semibold text-muted-foreground">
               メッセージ
             </label>
-            <textarea
-              className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            <Textarea
+              className="min-h-24"
               placeholder="ご意見・ご要望を入力してください"
             />
           </div>

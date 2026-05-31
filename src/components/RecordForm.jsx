@@ -22,6 +22,14 @@ function Field({ label, children }) {
   );
 }
 
+// 日付文字列を days 日分ずらす（YYYY-MM-DD → YYYY-MM-DD）
+function shiftDate(dateStr, days) {
+  if (!dateStr) return dateStr;
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 export default function RecordForm({
   draft,
   onField,
@@ -29,6 +37,13 @@ export default function RecordForm({
   onSave,
   savedRecord,
 }) {
+  function handleWeightStep(delta) {
+    const current = parseFloat(draft.weight);
+    const base = Number.isFinite(current) ? current : 0;
+    const next = Math.max(0, base + delta);
+    onField("weight", next.toFixed(1));
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <Card>
@@ -44,23 +59,74 @@ export default function RecordForm({
               placeholder="名前"
             />
           </Field>
+
+          {/* 日付：前日 / input / 翌日 ボタン */}
           <Field label="日付">
-            <Input
-              type="date"
-              value={draft.date}
-              onChange={(e) => onDateChange(e.target.value)}
-            />
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => onDateChange(shiftDate(draft.date, -1))}
+                aria-label="前日"
+                className="shrink-0 text-base"
+              >
+                ‹
+              </Button>
+              <Input
+                type="date"
+                value={draft.date}
+                onChange={(e) => onDateChange(e.target.value)}
+                className="flex-1 text-center"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => onDateChange(shiftDate(draft.date, 1))}
+                aria-label="翌日"
+                className="shrink-0 text-base"
+              >
+                ›
+              </Button>
+            </div>
           </Field>
+
+          {/* 体重：- / input / + ボタン */}
           <Field label="体重 kg">
-            <Input
-              type="number"
-              step="0.1"
-              inputMode="decimal"
-              value={draft.weight}
-              onChange={(e) => onField("weight", e.target.value)}
-              placeholder="例 70.5"
-            />
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => handleWeightStep(-0.1)}
+                aria-label="-0.1kg"
+                className="shrink-0 text-base font-bold"
+              >
+                −
+              </Button>
+              <Input
+                type="number"
+                step="0.1"
+                inputMode="decimal"
+                value={draft.weight}
+                onChange={(e) => onField("weight", e.target.value)}
+                placeholder="例 70.5"
+                className="flex-1 text-center"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => handleWeightStep(0.1)}
+                aria-label="+0.1kg"
+                className="shrink-0 text-base font-bold"
+              >
+                ＋
+              </Button>
+            </div>
           </Field>
+
           <Field label="摂取カロリー kcal">
             <Input
               type="number"
@@ -70,6 +136,7 @@ export default function RecordForm({
               placeholder="例 2500"
             />
           </Field>
+
           <Field label="メモ">
             <Textarea
               value={draft.note}
@@ -77,6 +144,7 @@ export default function RecordForm({
               placeholder="体調、睡眠、反省など"
             />
           </Field>
+
           <Button className="w-full" onClick={onSave}>
             保存
           </Button>

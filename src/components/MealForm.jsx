@@ -89,7 +89,7 @@ export default function MealForm({ meals = [], onChange }) {
             <ul className="flex flex-col gap-2">
               {meals.map((m, i) => (
                 <li
-                  key={i}
+                  key={`${m.time || ""}-${i}`}
                   className="flex items-center gap-2 rounded-md border bg-secondary/30 p-2"
                 >
                   <Input
